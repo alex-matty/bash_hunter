@@ -27,7 +27,7 @@ then
 	while [ $lowNumber -le $highNumber ]
 	do
 		pingedIp="$newUserIp$lowNumber"
-		ping -c 1 "$pingedIp" 2>&1 >/dev/null
+		ping -c 1 -n "$pingedIp" 2>&1 >/dev/null
 		if [ $? -eq 0 ]
 		then
 			echo "$pingedIp is alive"
@@ -40,7 +40,7 @@ then
 else
 	echo -e "\nChecking if host is alive..."
 
-	ping -c 4 $userIp 2>&1 >/dev/null
+	ping -c 1 -n $userIp 2>&1 >/dev/null
 
 	if [ $? -eq 0 ]
 	then
@@ -59,10 +59,15 @@ startTime=$(date +%s)
 
 for element in "${rangeIp[@]}"
 do
-	echo -e "\nStarting Scan for $element\n"
+	echo -e "\nStarting Scan for $element"
 
 	counter1=$firstPort
 	counter2=$lastPort
+
+	MacAddress=$(arp $element)
+	MacAddress=$( echo $MacAddress | cut -d ' ' -f 9 )
+
+	echo -e "MAC Address is $MacAddress\n"
 
 	while [ $counter1 -le $counter2 ]
 	do
