@@ -12,9 +12,29 @@ rangeIp=()
 #When user provides IP separated with commas
 
 #When user provides a range of IPs with a dash
+if [[ "$userIp" == *"-"* ]]
+then
+	Ip=$( echo $userIp | cut -d '-' --fields=1 )
+	firstIp=$( echo $Ip | cut -d '.' --fields=1,2,3 )
+	firstIp="$firstIp."
+	firstNumber=$( echo $Ip | cut -d '.' --fields=4)
+	secondNumber=$( echo $userIp | cut -d '-' --fields=2 )
+	echo -e"\nChecking for alive hosts..."
+
+	while [[ $firstNumber -le $secondNumber ]]
+	do
+		pingedIp="$firstIp$firstNumber"
+		ping -c 1 -n "$pingedIp" 2>&1 >/dev/null
+		if [[ $? -eq 0 ]]
+		then
+			echo "pingedIp is alive"
+			rangeIp+=("${pingedIp}")
+		fi
+		let firstNumber=firstNumber+1
+	done
 
 #When provided IP with a /24 CIDR range
-if [ "$userIp" == '192.168.1.0/24' ]
+elif [[ "$userIp" == *"/24"* ]]
 then
 	newUserIp=$( echo $userIp | cut -d '.' --fields=1,2,3 )
 	newUserIp="$newUserIp."
