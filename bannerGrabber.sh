@@ -2,9 +2,9 @@
 
 #Provide an IP and grab banners for each port if open
 
-#NOTES: add an option to analyze a range of ips with just one run.
+#NOTES:
 
-echo -n "Provide ip to check for open ports: "
+echo -n "Provide ip (Single, CIDR Range or range with a dash) to check for open ports: "
 read userIp
 
 rangeIp=()
@@ -14,12 +14,13 @@ rangeIp=()
 #When user provides a range of IPs with a dash
 if [[ "$userIp" == *"-"* ]]
 then
+	startTime=$(date +%s)
 	Ip=$( echo $userIp | cut -d '-' --fields=1 )
 	firstIp=$( echo $Ip | cut -d '.' --fields=1,2,3 )
 	firstIp="$firstIp."
 	firstNumber=$( echo $Ip | cut -d '.' --fields=4)
 	secondNumber=$( echo $userIp | cut -d '-' --fields=2 )
-	echo -e"\nChecking for alive hosts..."
+	echo -e "\nChecking for alive hosts..."
 
 	while [[ $firstNumber -le $secondNumber ]]
 	do
@@ -27,7 +28,7 @@ then
 		ping -c 1 -n "$pingedIp" 2>&1 >/dev/null
 		if [[ $? -eq 0 ]]
 		then
-			echo "pingedIp is alive"
+			echo "$pingedIp is alive"
 			rangeIp+=("${pingedIp}")
 		fi
 		let firstNumber=firstNumber+1
@@ -36,6 +37,7 @@ then
 #When provided IP with a /24 CIDR range
 elif [[ "$userIp" == *"/24"* ]]
 then
+	startTime=$(date +%s)
 	newUserIp=$( echo $userIp | cut -d '.' --fields=1,2,3 )
 	newUserIp="$newUserIp."
 
@@ -58,6 +60,7 @@ then
 
 #Single IP provided
 else
+	startTime=$(date +%s)
 	echo -e "\nChecking if host is alive..."
 
 	ping -c 1 -n $userIp 2>&1 >/dev/null
@@ -69,34 +72,38 @@ else
 	fi
 fi
 
-echo "Range of ports to check: "
-echo -n "First port: "
-read firstPort
-echo -n "Last port: "
-read lastPort
 
-startTime=$(date +%s)
+if [[ ${#rangeIp[@]} -eq 0 ]]
+then
+	echo "No alive hosts"
+else
+	echo "Range of ports to check: "
+	echo -n "First port: "
+	read firstPort
+	echo -n "Last port: "
+	read lastPort
 
-for element in "${rangeIp[@]}"
-do
-	echo -e "\nStarting Scan for $element"
-
-	counter1=$firstPort
-	counter2=$lastPort
-
-	MacAddress=$(arp $element)
-	MacAddress=$( echo $MacAddress | cut -d ' ' -f 9 )
-
-	echo -e "MAC Address is $MacAddress\n"
-
-	while [ $counter1 -le $counter2 ]
+	for element in "${rangeIp[@]}"
 	do
-		nc -z $element $counter1 2>/dev/null && echo "$(tput setaf 3)*** Port $counter1 is listening ***$(tput setaf 7)"
-		let counter1=counter1+1
+		echo -e "\nStarting Scan for $element"
+
+		counter1=$firstPort
+		counter2=$lastPort
+
+		MacAddress=$(arp $element)
+		MacAddress=$( echo $MacAddress | cut -d ' ' -f 9 )
+
+		echo -e "MAC Address is $MacAddress\n"
+
+		while [ $counter1 -le $counter2 ]
+		do
+			nc -z $element $counter1 2>/dev/null && echo "$(tput setaf 3)*** Port $counter1 is listening ***$(tput setaf 7)"
+			let counter1=counter1+1
+		done
 	done
-done
 
-endTime=$(date +%s)
-runTime=$((endTime-startTime))
+	endTime=$(date +%s)
+	runTime=$((endTime-startTime))
 
-echo -e "\nScan finished in $runTime seconds"
+	echo -e "\nScan finished in $runTime seconds"
+fi
