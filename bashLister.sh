@@ -3,9 +3,23 @@
 # Wordlist generator
 
 echo "Wordlist generator"
-
-echo -n "Base word to generate wordlist: "
+echo -n "Use single word or wordlist: "
 read word
+
+if [[ $word == "wordlist" ]]
+then
+	echo -n "wordlist to use: "
+	read word
+	listArray=()
+	mapfile listArray < $word
+elif [[ $word == "word" ]]
+then
+	echo -n "Word to use: "
+	read word
+	listArray=()
+	listArray+=("${word[@]}")
+fi
+
 echo -n "Want to append numbers: "
 read appendNumbers
 
@@ -23,14 +37,17 @@ echo -n "Filename to generate: "
 read fileName
 fileName="$fileName"".txt"
 
-newWord=$(echo $word | tr [:upper:] [:lower:])
-wordArray+=("${newWord}")
+for x in ${listArray[@]}
+do
+	newWord=$(echo $x | tr [:upper:] [:lower:])
+	wordArray+=("${newWord}")
 
-newWord=$(echo $word | tr [:lower:] [:upper:])
-wordArray+=("${newWord}")
+	newWord=$(echo $x | tr [:lower:] [:upper:])
+	wordArray+=("${newWord}")
 
-newWord=$(echo "${word^}")
-wordArray+=("${newWord}")
+	newWord=$(echo "${x^}")
+	wordArray+=("${newWord}")
+done
 
 # If any of these characters is present in the string, switch it with the corresponding number
 
@@ -42,16 +59,12 @@ then
 		then
 			newWord=$(echo $element | tr eE 3)
 			wordArray+=("${newWord}")
-		fi
 
-		for element in ${wordArray[@]}
-		do
-			if [[ $element == *"s"* ]] || [[ $element == *"S"* ]]
-			then
-				newWord=$(echo $element | tr sS 5)
-				wordArray+=("${newWord}")
-			fi
-		done
+		elif [[ $element == *"s"* ]] || [[ $element == *"S"* ]]
+		then
+			newWord=$(echo $element | tr sS 5)
+			wordArray+=("${newWord}")
+		fi
 	done
 fi
 
