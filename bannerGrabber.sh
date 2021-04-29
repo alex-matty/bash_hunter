@@ -4,15 +4,28 @@
 
 #NOTES:
 
-echo -n "Provide ip (Single, CIDR Range or range with a dash) to check for open ports: "
+echo -n "Provide ip (Single, separated with commas, CIDR Range or range with a dash) to check for open ports: "
 read userIp
 
 rangeIp=()
 
 #When user provides IP separated with commas
+if [[ "$userIp" == *","* ]]
+then
+	startTime=$(date +%s)
+	IFS="," read -a arrayIp <<< $userIp
+	for element in ${arrayIp[@]}
+	do
+		ping -c 1 -n "$element" 2>&1 >/dev/null
+		if [[ $? -eq 0 ]]
+		then
+			echo "$element is alive"
+			rangeIp+=("$element")
+		fi
+	done
 
 #When user provides a range of IPs with a dash
-if [[ "$userIp" == *"-"* ]]
+elif [[ "$userIp" == *"-"* ]]
 then
 	startTime=$(date +%s)
 	Ip=$( echo $userIp | cut -d '-' --fields=1 )
