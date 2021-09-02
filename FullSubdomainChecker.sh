@@ -5,9 +5,33 @@
 #2nd argument Output File Name.
 #3rd argument Out Of Scope items
 
-domainName=$1
-FoundSubdomainsFile=$2
-outOfScopeWordlist=$3
+#Help function
+
+Help()
+{
+	echo -e "Provide a domain name and a out-of scope wordlist, and get three files in-scope subdomains | subdomains with a HTTP ot HTTPS server | APIs\n"
+	echo -e "Syntax: $0 -d google.com -s newfile.txt -o no-nolist.txt\n"
+	echo "-d Domain to check"
+	echo "-s Filename to save new found subdomains"
+	echo "-o out-of-scope elements provided in a file. element per line"
+	echo "-h Print this help"
+
+}
+
+#Create a help function and flags to get arguments:
+
+while getopts d:s:o:h flag
+do
+	case "${flag}" in
+		d) domainName=${OPTARG};;
+		s) FoundSubdomainsFile=${OPTARG};;
+		o) outOfScopeWordlist=${OPTARG};;
+		h) Help
+			exit;;
+	esac
+done
+
+
 
 #Use sublist3r to check for subdomains and store the output on a created name
 
@@ -25,7 +49,7 @@ mapfile arraySubdomains < $FoundSubdomainsFile
 mapfile arrayOutOfScope < $outOfScopeWordlist
 
 
-#Check every subdomainElement of the subdomain list to verify whether it is or isn't in the Out of Scope items
+#Check every subdomainElement of the subdomain list to verify whether it is or isn't in the Out-of-Scope items
 
 for subdomainElement in ${arraySubdomains[@]}
 do
@@ -47,7 +71,7 @@ do
 			let counter=counter+1
 		elif [[ "$subdomainElement" == "$outOfScopeElement" ]]
 		then
-			let counter=y+1000	
+			let counter=y+1	
 		fi
 	done
 
@@ -96,4 +120,4 @@ do
 	echo "$element" >> WebAPIs.txt
 done
 
-echo "All done!!! Have a good bug hunting!!"
+echo "All done!!! Happy hunting!!"
