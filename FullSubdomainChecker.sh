@@ -1,46 +1,57 @@
 #!/bin/bash
 
-#Remove out of scope items from a list of subdomains.
+#Starts by getting a Domain Name and the output desired name to create it.
+#1st argument Domain Name
+#2nd argument Output File Name.
+#3rd argument Out Of Scope items
 
-echo "Subdomain cleaner!!!"
-echo -e "By MEGANUKE\n"
+domainName=$1
+FoundSubdomainsFile=$2
+outOfScopeWordlist=$3
 
-#Get a list of subdomains and a list of Out of Scope items from the user
-echo -n "First Subdomain list: "
-read subdomains
-echo -n "Out of scope items: "
-read outOfScope
+#Use sublist3r to check for subdomains and store the output on a created name
 
+sublist3r -d $domainName -v -o $FoundSubdomainsFile
+
+#Compare found subdomains with the out-of-scope wordlist and create an in-scope wordlist 
 #Create empty arrays as containers for the wordlists
+
 arraySubdomains=()
 arrayOutOfScope=()
 arrayInScope=()
 
-#Map the Subdomains and Out of Scope as an array
-mapfile arraySubdomains < $subdomains
-mapfile arrayOutOfScope < $outOfScope
+#Map the Subdomains and Out-of-Scope as an array
+mapfile arraySubdomains < $FoundSubdomainsFile
+mapfile arrayOutOfScope < $outOfScopeWordlist
+
 
 #Check every subdomainElement of the subdomain list to verify whether it is or isn't in the Out of Scope items
+
 for subdomainElement in ${arraySubdomains[@]}
 do
 
-	# x is the counter 'y' is the total amount of elements in the out of scope wordlist
-	#NOTE: Change the Value of "y" according to the number of elements in the Out of Scope list
-	x=0
-	y=12
+	#Count the number of elements in the out-of-scope list and create a variable with the value
+	#This will be the value to stop the for loop and go to next element
+	
+	numberOfOutOfScopeItems=$(wc -l $outOfScopeWordlist | awk '{print$1}')
+
+	#Create a variable counter with value 0
+
+	counter=0
+	y=$numberOfOutOfScopeItems
 
 	for outOfScopeElement in ${arrayOutOfScope[@]}
 	do
 		if [[ "$subdomainElement" != "$outOfScopeElement" ]]
 		then
-			let x=x+1
+			let counter=counter+1
 		elif [[ "$subdomainElement" == "$outOfScopeElement" ]]
 		then
-			let x=13 #Change this value to be bigger than the amount of elements in the out of scope list
+			let counter=y+1000	
 		fi
 	done
 
-	if [[ $x -eq 12 ]]
+	if [[ $counter -eq $numberOfOutOfScopeItems ]]
 	then
 		arrayInScope+=("${subdomainElement}")
 	fi
@@ -49,44 +60,17 @@ done
 #Create a new text file containing only In Scope items.
 for item in ${arrayInScope[@]}
 do
-	echo "$item" >> InScope.txt
+	echo "$item" >> SubdomainsInScope.txt
 done
 
 #Check which subdomains have a working web server either with HTTP or HTTPS
-cat InScope.txt | httprobe | tee WebScope.txt
+cat SubdomainsInScope.txt | httprobe | cat > ActiveWebServerInScope.txt
 
-#Check every subdomain, if it has content get it if not discard it
-
-#Create an empty array
-arraySubdomains=()
-goodSubdomains=()
-subdomainList=WebScope.txt
-
-#Transform the wordlist into an array
-mapfile arraySubdomains < $subdomainList
-
-#Check every subdomain for content, if it has content append the subdomain to a new list
-for subdomain in ${arraySubdomains[@]}
-do
-	contentSize=$(curl -so /dev/null $subdomain -w '%{size_download}')
-	if [[ $contentSize -gt 0 ]]
-	then
-		goodSubdomains+=("$subdomain")
-	fi
-done
-
-#Create a text file with subdomains with content
-for item in ${goodSubdomains[@]}
-do
-	echo "$item" >> SubdomainsToCheck.txt
-done
-
-#Cat file into the terminal
-cat SubdomainsToCheck.txt
+#NOTE: Find a way to check if a domain resolves to another domain to verify if it is actually in-scope
 
 #Script to get all API URLs
 
-WebURLs=WebScope.txt
+WebURLs=ActiveWebServerInScope.txt
 
 #Create an empty array to contain the elements of the wordlist
 arrayURLs=()
@@ -100,7 +84,7 @@ mapfile arrayURLs < $WebURLs
 #NOTE: Depending on the API Pattern, change it accordingly to what you need
 for URL in ${arrayURLs[@]}
 do
-	if [[ $URL == *"api-"* ]]
+	if [[ $URL == *"api"* ]]
 	then
 		arrayAPIs+=("${URL}")
 	fi
@@ -112,4 +96,4 @@ do
 	echo "$element" >> WebAPIs.txt
 done
 
-cat WebAPIs.txt
+echo "All done!!! Have a good bug hunting!!"
