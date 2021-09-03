@@ -1,5 +1,18 @@
 #!/bin/bash
 
+#Check if all software is installed and ready to use, if something is missing, advice user and ask for installation
+
+if ! command -v sublist3r 2&>/dev/null
+then
+	echo "sublist3r is not installed or not in PATH but it's needed. Make sure to install it"
+	exit
+fi
+
+if ! command -v httprobe 2&>/dev/null
+then
+	echo "HTTProbe is not installed or not in PATH but it's needed. Make sure to install it"
+fi 
+
 #Starts by getting a Domain Name and the output desired name to create it.
 #1st argument Domain Name
 #2nd argument Output File Name.
@@ -9,8 +22,8 @@
 
 Help()
 {
-	echo -e "Provide a domain name and a out-of scope wordlist, and get three files in-scope subdomains | subdomains with a HTTP ot HTTPS server | APIs\n"
-	echo -e "Syntax: $0 -d google.com -s newfile.txt -o no-nolist.txt\n"
+	echo -e "Provide a domain name and a out-of scope wordlist, and get three files | in-scope subdomains | subdomains with an HTTP ot HTTPS server | APIs\n"
+	echo -e "Example Syntax: $0 -d google.com -s newfile.txt -o no-nolist.txt\n"
 	echo "-d Domain to check"
 	echo "-s Filename to save new found subdomains"
 	echo "-o out-of-scope elements provided in a file. element per line"
@@ -35,7 +48,7 @@ done
 
 #Use sublist3r to check for subdomains and store the output on a created name
 
-sublist3r -d $domainName -v -o $FoundSubdomainsFile
+#sublist3r -d $domainName -v -o $FoundSubdomainsFile
 
 #Compare found subdomains with the out-of-scope wordlist and create an in-scope wordlist 
 #Create empty arrays as containers for the wordlists
