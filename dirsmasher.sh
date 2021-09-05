@@ -68,7 +68,7 @@ startTime=$(date +%s)
 bruteforcing()
 {
 	progressStart=0
-	progressEnd=$( wc -l $wordlist | awk '{print$1}' )
+	progressEnd=${#arrayWordlist[@]}
 
 	for element in ${arrayWordlist[@]}
 	do
