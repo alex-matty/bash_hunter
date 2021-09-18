@@ -1,30 +1,50 @@
 #!/bin/bash
 
-#Provide an IP and grab banners for each port if open
+#Provide an IP or IP range and check for open ports
 
-#Help function to provide usage and 
+#Help function to provide usage and syntax help
 Help()
 {
 	echo "$0 is a simple port scanner in which you can provide a single IP, separated by commas IPs or a range of IPs separated by a dash or with CIDR range"
 	echo "Script will tell you if IP is online by sending a ping, if it has open ports and if possible MAC Address"
 	echo -e "Created by MEGANUKE\n"
-	echo "Example Syntax: $0 -i 192.168.1.1 -p 1-65535"
+	echo -e "Example Syntax: $0 -i 192.168.1.1 -p 1-65535 -o filename.txt\n"
 	echo "-i IP"
-	echo "-p Single port or range of ports"
+	echo "-p Single port, range of ports (dash separated) or specific ports (comma separated)"
+	echo "-o Output File Name (Optional)"
 }
 
-while getopts i:p:h flag
+#Accept and map arguments
+while getopts i:p:o:h flag
 do
 	case "${flag}" in
 		i) userIp=${OPTARG};;
 		p) portRange=${OPTARG};;
+		o) fileOutput=${OPTARG};;
 		h) Help
 			exit;;
 	esac
 done
 
+#Create empty arrays to save IPs and Ports
 rangeIp=()
 arrayPorts=()
+
+#Main banner, just to create a pretty layout
+echo -e "\n-----------------------------------------------------------------------"
+echo "EasyPortScanner by MEGANUKE"
+echo "-----------------------------------------------------------------------"
+
+echo -e "\n-----------------------------------------------------------------------"
+echo "[-] URL: $userIp"
+echo "[-] Port(s) to scan: $portRange"
+if [[ -n $fileOutput ]]
+then
+	# Remove all info if file exist, this to avoid rewriting the same file
+	echo -ne "\r" > $fileOutput
+	echo "[-] Output File: $fileOutput"
+fi
+echo "-----------------------------------------------------------------------"
 
 #When user provides IP separated with commas
 if [[ "$userIp" == *","* ]]
@@ -88,7 +108,7 @@ then
 		let lowNumber=lowNumber+1
 	done
 
-#Single IP provided
+#If a Single IP provided
 else
 	startTime=$(date +%s)
 	echo -e "\nChecking if host is alive..."
@@ -102,30 +122,118 @@ else
 	fi
 fi
 
-
+# If no IP responds to a ping request, treat every host as offline and finish the program
 if [[ ${#rangeIp[@]} -eq 0 ]]
 then
 	echo "No alive hosts"
+
+# If there are ping responses check for open ports in the alive hosts
 else
+	# If a port range is specified with a dash create a sequence with both values
+	if [[ $portRange == *"-"* ]]
+	then
+		IFS="-"	read -a arrayPorts <<< $portRange
 
-	IFS="-" read -a arrayPorts <<< $portRange
-
-	for element in "${rangeIp[@]}"
-	do
-		echo -e "\nStarting Scan for $element"
-
-		MacAddress=$(arp $element)
-		MacAddress=$( echo $MacAddress | cut -d ' ' -f 9 )
-
-		echo -e "MAC Address is $MacAddress\n"
-
-		firsPort=${arrayPorts[0]}
-		lastPort=${arrayPorts[1]}
-		for port in $(seq $firsPort $lastPort)
+		for element in "${rangeIp[@]}"
 		do
-			nc -z $element $port 2>/dev/null && echo "$(tput setaf 3)*** Port $port is listening ***$(tput setaf 7)"
+			if [[ -n $fileOutput ]]
+			then
+				echo -e "\nStarting Scan for $element" | tee -a $fileOutput
+
+				MacAddress=$(arp $element)
+				MacAddress=$( echo $MacAddress | cut -d ' ' -f 9 )
+
+				echo -e "MAC Address is $MacAddress\n" | tee -a $fileOutput
+
+				firsPort=${arrayPorts[0]}
+				lastPort=${arrayPorts[1]}
+				for port in $(seq $firsPort $lastPort)
+				do
+					nc -z $element $port 2>/dev/null && echo "$(tput setaf 3)*** Port $port is listening ***$(tput setaf 7)" | tee -a $fileOutput
+				done
+
+			else
+				echo -e "\nStarting Scan for $element"
+
+				MacAddress=$(arp $element)
+				MacAddress=$( echo $MacAddress | cut -d ' ' -f 9 )
+
+				echo -e "MAC Address is $MacAddress\n"
+
+				firsPort=${arrayPorts[0]}
+				lastPort=${arrayPorts[1]}
+				for port in $(seq $firsPort $lastPort)
+				do
+					nc -z $element $port 2>/dev/null && echo "$(tput setaf 3)*** Port $port is listening ***$(tput setaf 7)"
+				done
+			fi
 		done
-	done
+
+	# If individual ports are specified, create an array indexing each port as a single value
+	elif [[ $portRange == *","* ]]
+	then
+		IFS="," read -a arrayPorts <<< $portRange
+
+		for element in "${rangeIp[@]}"
+		do
+
+			if [[ -n $fileOutput ]]
+			then
+				echo -e "\nStarting Scan for $element" | tee -a $fileOutput
+
+				MacAddress=$(arp $element)
+				MacAddress=$( echo $MacAddress | cut -d ' ' -f 9 )
+
+				echo -e "MAC Address is $MacAddress\n" | tee -a $fileOutput
+
+				for port in "${arrayPorts[@]}"
+				do
+					nc -z $element $port 2>/dev/null && echo "$(tput setaf 3)*** Port $port is listening ***$(tput setaf 7)" | tee -a $fileOutput
+				done
+
+			else
+				echo -e "\nStarting Scan for $element"
+
+				MacAddress=$(arp $element)
+				MacAddress=$( echo $MacAddress | cut -d ' ' -f 9 )
+
+				echo -e "MAC Address is $MacAddress\n"
+
+				for port in "${arrayPorts[@]}"
+				do
+					nc -z $element $port 2>/dev/null && echo "$(tput setaf 3)*** Port $port is listening ***$(tput setaf 7)"
+				done
+			fi
+		done
+
+	# If just one port is specified, scan that port in every IP of the array
+	else
+		for element in "${rangeIp[@]}"
+		do
+			if [[ -n $fileOutput ]]
+			then
+				echo -e "\nStarting Scan for $element" | tee -a $fileOutput
+
+				MacAddress=$(arp $element)
+				MacAddress=$( echo $MacAddress | cut -d ' ' -f 9 )
+
+				echo -e "MAC Address is $MacAddress\n" | tee -a $fileOutput
+
+				nc -z $element $portRange 2>/dev/null && echo "$(tput setaf 3)*** Port $portRange is listening ***$(tput setaf 7)" | tee -a $fileOutput
+
+			else
+				echo -e "\nStarting Scan for $element"
+
+				MacAddress=$(arp $element)
+				MacAddress=$( echo $MacAddress | cut -d ' ' -f 9 )
+
+				echo -e "MAC Address is $MacAddress\n"
+
+				nc -z $element $portRange 2>/dev/null && echo "$(tput setaf 3)*** Port $portRange is listening ***$(tput setaf 7)"
+			fi
+		done
+
+	fi
 
 	endTime=$(date +%s)
 	runTime=$((endTime-startTime))
