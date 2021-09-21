@@ -40,18 +40,16 @@ Help() {
 	echo "-f File to Check hash or 1st File to compare (Depending on the mode)"
 	echo "-g 2nd file to compare (Only if mode B is selected)"
 	echo "-s HASH (If mode A is selected)"
-	echo "-t Type of hash (If mode A is selected)"
 }
 
 #Get arguments for user and map them to the corresponding variables
-while getopts m:f:t:s:g:h flag
+while getopts m:f:s:g:h flag
 do
 	case "${flag}" in
 		m) selectedOption=${OPTARG};;
 		f) file1=${OPTARG};;
 		g) file2=${OPTARG};;
 		s) providedHash=${OPTARG};;
-		t) typeOfHash=${OPTARG};;
 		h) Help
 			exit;;
 	esac
@@ -60,6 +58,10 @@ done
 #Uppercase needed variables to avoid any issues string comparison
 selectedOption=${selectedOption^^}
 typeOfHash=${typeOfHash^^}
+
+#Count the number of characters in the hash string to try to guess the hash type
+
+hashStringCount=${#providedHash}
 
 #Define color variables to create a prettier and easier to read output
 YELLOW='\033[1;33m'
@@ -77,7 +79,20 @@ then
 	echo -e "${LCYAN}[-] MODE:${NOCOLOR} $selectedOption -- Compare Hash and File Hash"
 	echo -e "${LCYAN}[-] File:${NOCOLOR} $file1"
 	echo -e "${LCYAN}[-] Hash:${NOCOLOR} $providedHash"
-	echo -e "${LCYAN}[-] Hash-Type:${NOCOLOR} $typeOfHash"
+	if [[ $hashStringCount -eq 32 ]]
+	then
+		echo -e "${LCYAN}[-] Hash-Type:${NOCOLOR} MD5"
+	elif [[ $hashStringCount -eq 40 ]]
+	then
+		echo -e "${LCYAN}[-] Hash-Type:${NOCOLOR} SHA1"
+	elif [[ $hashStringCount -eq 64 ]]
+	then
+		echo -e "${LCYAN}[-] Hash-Type:${NOCOLOR} SHA256"
+	elif [[ $hashStringCount -eq 128 ]]
+	then
+		echo -e "${LCYAN}[-] Hash-Type:${NOCOLOR} SHA512"
+	fi
+
 elif [[ $selectedOption == "B" ]]
 then
 	echo -e "${LCYAN}[-] MODE:${NOCOLOR} $selectedOption -- Compare two files with different hash algorithms"
@@ -90,9 +105,11 @@ echo -e "-----------------------------------------------------------------------
 if [[ $selectedOption == "A" ]]
 then
 
-	if [[ $typeOfHash == "MD5" ]]
+	if [[ $hashStringCount -eq 32 ]]
 	then
-		md5file1=$(md5sum $file1 | cut -d ' ' -f 1)
+
+		echo -e "${YELLOW}MD5 Hash Comparison${NOCOLOR}"
+		md5file1=$(md5sum $file1 | awk '{print$1}')
 		echo $md5file1
 		echo $providedHash
 
@@ -103,9 +120,11 @@ then
 			echo -e "${YELLOW}Something smells fishy\n${NOCOLOR}"
 		fi
 
-	elif [[ $typeOfHash == "SHA1" ]]
+	elif [[ $hashStringCount -eq 40 ]]
 	then
-		sha1file1=$(sha1sum $file1 | cut -d ' ' -f 1)
+
+		echo -e "${YELLOW}SHA1 Hash Comparison${NOCOLOR}"
+		sha1file1=$(sha1sum $file1 | awk '{print$1}')
 		echo $sha1file1
 		echo $providedHash
 
@@ -116,22 +135,26 @@ then
 			echo -e "${YELLOW}Something smells fishy\n${NOCOLOR}"
 		fi
 
-	elif [[ $typeOfHash == "SHA256" ]]
+	elif [[ $hashStringCount -eq 64 ]]
 	then
-		sha256file1=$(sha256sum $file1 | cut -d ' ' -f 1)
+
+		echo -e "${YELLOW}SHA256 Hash Comparison${NOCOLOR}"
+		sha256file1=$(sha256sum $file1 | awk '{print$1}')
 		echo $sha256file1
 		echo $providedHash
 
 		if [[ $sha256file1 == $providedHash ]]
 		then
 			echo -e "${YELLOW}Everything looks normal\n${NOCOLOR}"
-		else
+		else	
 			echo -e "${YELLOW}Something smells fishy\n${NOCOLOR}"
 		fi
 
-	elif [[ $typeOfHash == "SHA512" ]]
+	elif [[ $hashStringCount -eq 128 ]]
 	then
-		sha512file1=$(sha512sum $file1 | cut -d ' ' -f 1)
+
+		echo -e "${YELLOW}SHA512 Hash Comparison${NOCOLOR}"
+		sha512file1=$(sha512sum $file1 | awk '{print$1}')
 		echo $sha512file1
 		echo $providedHash
 
@@ -149,10 +172,10 @@ then
 	
 	echo -e "Calculating and comparing hashes...\n"
 
-	echo "MD5 Hash Comparison"
+	echo "${YELLOW}MD5 Hash Comparison${NOCOLOR}"
 
-	md5file1=$(md5sum $file1 | cut -d ' ' -f 1)
-	md5file2=$(md5sum $file2 | cut -d ' ' -f 1)
+	md5file1=$(md5sum $file1 | awk '{print$1}')
+	md5file2=$(md5sum $file2 | awk '{print$1}')
 
 	echo $md5file1
 	echo $md5file2
@@ -164,10 +187,10 @@ then
 		echo -e "${YELLOW}Something smells fishy\n${NOCOLOR}"
 	fi
 
-	echo "SHA1 Hash Comparison"
+	echo "${YELLOW}SHA1 Hash Comparison${NOCOLOR}"
 
-	sha1file1=$(sha1sum $file1 | cut -d ' ' -f 1)
-	sha1file2=$(sha1sum $file2 | cut -d ' ' -f 1)
+	sha1file1=$(sha1sum $file1 | awk '{print$1}')
+	sha1file2=$(sha1sum $file2 | awk '{print$1}')
 
 	echo $sha1file1
 	echo $sha1file2
@@ -179,10 +202,10 @@ then
 		echo -e "${YELLOW}Something smells fishy\n${NOCOLOR}"
 	fi
 
-	echo "SHA256 Hash Comparison"
+	echo "${YELLOW}SHA256 Hash Comparison${NOCOLOR}"
 
-	sha256file1=$(sha256sum $file1 | cut -d ' ' -f 1)
-	sha256file2=$(sha256sum $file2 | cut -d ' ' -f 1)
+	sha256file1=$(sha256sum $file1 | awk '{print$1}')
+	sha256file2=$(sha256sum $file2 | awk '{print$1}')
 
 	echo $sha256file1
 	echo $sha256file2
@@ -194,10 +217,10 @@ then
 		echo -e "${YELLOW}Something smells fishy\n${NOCOLOR}"
 	fi
 
-	echo "SHA512 Hash Comparison"
+	echo "${YELLOW}SHA512 Hash Comparison${NOCOLOR}"
 
-	sha512file1=$(sha512sum $file1 | cut -d ' ' -f 1)
-	sha512file2=$(sha512sum $file2 | cut -d ' ' -f 1)
+	sha512file1=$(sha512sum $file1 | awk '{print$1}')
+	sha512file2=$(sha512sum $file2 | awk '{print$1}')
 
 	echo $sha512file1
 	echo $sha512file2
