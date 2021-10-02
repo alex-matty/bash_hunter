@@ -11,6 +11,12 @@ then
 	exit
 fi
 
+#Variable colors, to be able to create a more readable user interface
+
+LCYAN='\033[1;36m'
+YELLOW='\033[1;33m'
+NOCOLOR='\033[0m'
+
 #Help Function to provide use of the tool and syntax
 
 Help()
@@ -74,17 +80,17 @@ bruteforcing()
 	do
 		htmlCode=$( curl --head -k --silent -o /dev/null --write-out '%{http_code}\n' "$website/$element" )
 	
-		if [[ $htmlCode -eq 200 ]] || [[ $htmlCode -eq 301 ]]
+		if [[ $htmlCode -ge 200 ]] && [[ $htmlCode -le 299 ]] || [[ $htmlCode -ge 300 ]] && [[ $htmlCode -le 399 ]]
 		then
-			echo "Status: $htmlCode   $website/$element"
+			echo -e "${YELLOW}Status: $htmlCode${NOCOLOR}   $website/$element"
 		fi
 
 		for secondElement in ${arrayExtensions[@]}
 		do
 			htmlCode=$( curl --head -k --silent -o /dev/null --write-out '%{http_code}\n' "$website/$element.$secondElement" )
-			if [[ $htmlCode -eq 200 ]] || [[ $htmlCode -eq 301 ]]
+			if [[ $htmlCode -ge 200 ]] && [[ $htmlCode -le 299 ]] || [[ $htmlCode -ge 300 ]] && [[ $htmlCode -le 399 ]]
 			then
-				echo "Status: $htmlCode   $website/$element.$secondElement"
+				echo -e "${YELLOW}Status: $htmlCode${NOCOLOR}   $website/$element.$secondElement"
 			fi
 		done
 
@@ -99,17 +105,23 @@ echo "DIRSmasher by MEGANUKE"
 echo "-----------------------------------------------------------------------"
 
 echo -e "\n-----------------------------------------------------------------------"
-echo "[-] URL: $website"
-echo "[-] Wordlist: $wordlist"
-echo "[-] Extensions: $extensions"
+echo -e "${LCYAN}[-] URL:${NOCOLOR} $website"
+echo -e "${LCYAN}[-] Wordlist: ${NOCOLOR}$wordlist"
+echo -e "${LCYAN}[-] Extensions:${NOCOLOR} $extensions"
 if [[ -n $fileOutput ]]
 then
-	echo "[-] Output File: $fileOutput"
+	echo -e "${LCYAN}[-] Output File:${NOCOLOR} $fileOutput"
 fi
 echo -e "-----------------------------------------------------------------------\n"
 
 #do the logic and if an output file is provided create a file with the name, otherwise don't create it
-bruteforcing | tee $fileOutput
+
+if [[ -n $fileOutput ]]
+then
+	bruteforcing | tee $fileOutput
+else
+	bruteforcing
+fi
 
 endTime=$(date +%s)
 totalTime=$((endTime-startTime))
