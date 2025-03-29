@@ -1,5 +1,3 @@
-<div align="center">
-
 <img src="https://bashlogo.com/img/logo/jpg/full_colored_light.jpg" width="400px">
 
 # Bash Hunter
@@ -12,4 +10,4 @@ If you believe these may be useful for you, feel free to take them, test them, a
 
 Cheers to you all!
 
-</div>
+##### MEGANUKE_
